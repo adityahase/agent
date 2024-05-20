@@ -21,9 +21,9 @@ http {
 	default_type application/octet-stream;
 
 	{% if ip_whitelist %}
-	{% for ip in ip_whitelist -%}
+	{%- for ip in ip_whitelist %}
 	allow {{ ip }};
-	{%- endfor %}
+	{% endfor -%}
 
 	deny all;
 	{% endif %}
