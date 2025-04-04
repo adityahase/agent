@@ -71,6 +71,7 @@ class Container(Base):
     def _inspect_overlay_network(self):
         with contextlib.suppress(Exception):
             network = self.config["network"]["name"]
+            self.execute("docker network ls")
             self.execute(f"docker network inspect {network}")
 
     @step("Create Overlay Network")
