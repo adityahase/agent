@@ -82,7 +82,7 @@ class Container(Base):
     @step("Stop Container")
     def stop(self):
         self.execute(f"docker stop {self.name}")
-        self.execute(f"ocker rm {self.name}")
+        self.execute(f"docker rm {self.name}")
 
     @step("Delete Network")
     def delete_network(self):
