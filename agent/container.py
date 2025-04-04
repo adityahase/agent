@@ -68,8 +68,8 @@ class Container(Base):
 
     @step("Create Overlay Network")
     def create_overlay_network(self):
-        subnet_cidr_block = self.config["subnet_cidr_block"]
-        network = self.config["network"]
+        subnet_cidr_block = self.config["network"]["subnet_cidr_block"]
+        network = self.config["network"]["name"]
         try:
             return self.execute(
                 f"docker network create --attachable --subnet {subnet_cidr_block} --driver='overlay' {network}"
@@ -100,7 +100,10 @@ class Container(Base):
 
     @property
     def networks(self):
-        return [f"{network['name']} --ip {network['ip']}" for network in self.config["networks"]]
+        return [
+            f"{network['name']} --ip {network['ip']}" if "ip" in network else network["name"]
+            for network in self.config["networks"]
+        ]
 
     @property
     def environment_variables(self):
