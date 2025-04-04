@@ -1594,3 +1594,26 @@ def recover_update_inplace(bench: str):
         request.json.get("image"),
     )
     return {"job": job}
+
+
+@application.route("/containers")
+def get_containers():
+    return {name: container.dump() for name, container in Server().containers.items()}
+
+
+@application.route("/containers/<string:container>")
+def get_container(container):
+    return Server().containers[container].dump()
+
+
+@application.route("/containers", methods=["POST"])
+def create_container():
+    data = request.json
+    job = Server().create_container(**data)
+    return {"job": job}
+
+
+@application.route("/containers/<string:container>", methods=["DELETE"])
+def archive_container(container):
+    job = Server().archive_container(container)
+    return {"job": job}

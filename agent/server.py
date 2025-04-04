@@ -15,6 +15,7 @@ from peewee import MySQLDatabase
 
 from agent.base import AgentException, Base
 from agent.bench import Bench
+from agent.container import Container
 from agent.exceptions import BenchNotExistsException
 from agent.job import Job, Step, job, step
 from agent.patch_handler import run_patches
@@ -30,10 +31,44 @@ class Server(Base):
         self.archived_directory = os.path.join(os.path.dirname(self.benches_directory), "archived")
         self.nginx_directory = self.config["nginx_directory"]
         self.hosts_directory = os.path.join(self.nginx_directory, "hosts")
-
+        self.containers_directory = self.config.get(
+            "containers_directory", os.path.join(self.directory, "containers")
+        )
         self.error_pages_directory = os.path.join(self.directory, "repo", "agent", "pages")
         self.job = None
         self.step = None
+
+    @job("Create Container", priority="low")
+    def create_container(self, name, config):
+        self.init_container(name, config)
+        container = Container(name, self)
+        container.create_overlay_network()
+        container.start()
+
+    @step("Initialize Container")
+    def init_container(self, name, config):
+        container_directory = os.path.join(self.containers_directory, name)
+        os.makedirs(container_directory, exist_ok=True)
+
+        config_file = os.path.join(container_directory, "config.json")
+        with open(config_file, "w") as f:
+            json.dump(config, f, indent=1, sort_keys=True)
+
+    @job("Archive Container", priority="low")
+    def archive_container(self, name):
+        container_directory = os.path.join(self.containers_directory, name)
+        if not os.path.exists(container_directory):
+            return
+        container = Container(name, self)
+        container.stop()
+
+    @property
+    def containers(self):
+        containers = {}
+        for directory in os.listdir(self.containers_directory):
+            with suppress(Exception):
+                containers[directory] = Container(directory, self)
+        return containers
 
     def docker_login(self, registry):
         url = registry["url"]
