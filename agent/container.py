@@ -51,7 +51,7 @@ class Container(Base):
 
     def get_container_args(self):
         network = self.config["network"]["name"]
-        ip = self.config["network"]["ip"]
+        ip = self.config["network"]["ip_address"]
         arguments = [
             f"--name {self.name}",
             "--restart always",
