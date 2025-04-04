@@ -2,6 +2,7 @@ import os
 
 from agent.base import Base
 from agent.job import step
+import contextlib
 
 
 class Container(Base):
@@ -46,6 +47,7 @@ class Container(Base):
 
     def start_container(self):
         arguments = self.get_container_args()
+        self._inspect_overlay_network()  # Just a swarm quirk
         return self.execute(f"docker run {arguments}")
 
     def get_container_args(self):
@@ -65,6 +67,11 @@ class Container(Base):
             arguments.append(f"--env {variable}")
         arguments.append(self.config["image"])
         return " ".join(arguments)
+
+    def _inspect_overlay_network(self):
+        with contextlib.suppress(Exception):
+            network = self.config["network"]["name"]
+            self.execute(f"docker network inspect {network}")
 
     @step("Create Overlay Network")
     def create_overlay_network(self):
