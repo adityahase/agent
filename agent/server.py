@@ -42,7 +42,7 @@ class Server(Base):
     def create_container(self, name, config):
         self.init_container(name, config)
         container = Container(name, self)
-        container.create_overlay_network()
+        container.create_network()
         container.start()
 
     @step("Initialize Container")
@@ -60,7 +60,16 @@ class Server(Base):
         if not os.path.exists(container_directory):
             return
         container = Container(name, self)
+        network = container.config["network"]
         container.stop()
+        self.delete_network(network)
+
+    @step("Delete Network")
+    def delete_network(self, network):
+        try:
+            return self.execute(f"docker network rm {network}")
+        except Exception:
+            pass
 
     @property
     def containers(self):

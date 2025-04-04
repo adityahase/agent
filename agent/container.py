@@ -47,18 +47,18 @@ class Container(Base):
 
     def start_container(self):
         arguments = self.get_container_args()
-        self._inspect_overlay_network()  # Just a swarm quirk
         return self.execute(f"docker run {arguments}")
 
     def get_container_args(self):
+        network = self.config["network"]["name"]
+        ip = self.config["network"]["ip"]
         arguments = [
             f"--name {self.name}",
             "--restart always",
             "--detach",
             f"--hostname {self.name}",
+            f"--network {network} --ip {ip}",
         ]
-        for network in self.networks:
-            arguments.append(f"--network {network}")
         for mount in self.mounts:
             arguments.append(f"--volume {mount}")
         for port in self.ports:
@@ -68,19 +68,13 @@ class Container(Base):
         arguments.append(self.config["image"])
         return " ".join(arguments)
 
-    def _inspect_overlay_network(self):
-        with contextlib.suppress(Exception):
-            network = self.config["network"]["name"]
-            self.execute("docker network ls")
-            self.execute(f"docker network inspect {network}")
-
-    @step("Create Overlay Network")
-    def create_overlay_network(self):
+    @step("Create Network")
+    def create_network(self):
         subnet_cidr_block = self.config["network"]["subnet_cidr_block"]
         network = self.config["network"]["name"]
         try:
             return self.execute(
-                f"docker network create --attachable --subnet {subnet_cidr_block} --driver='overlay' {network}"
+                f"docker network create --attachable --subnet {subnet_cidr_block} --driver='bridge' {network}"
             )
         except Exception:
             pass
@@ -90,10 +84,13 @@ class Container(Base):
         self.execute(f"docker stop {self.name}")
         self.execute(f"ocker rm {self.name}")
 
-    @step("Delete Overlay Network")
-    def delete_overlay_network(self):
+    @step("Delete Network")
+    def delete_network(self):
         network = self.config["network"]
-        return self.execute(f"docker network rm {network}")
+        try:
+            return self.execute(f"docker network rm {network}")
+        except Exception:
+            pass
 
     @property
     def mounts(self):
@@ -108,10 +105,7 @@ class Container(Base):
 
     @property
     def networks(self):
-        return [
-            f"{network['name']} --ip {network['ip']}" if "ip" in network else network["name"]
-            for network in self.config["networks"]
-        ]
+        return [f"{network['name']} --ip {network['ip']}" for network in self.config["networks"]]
 
     @property
     def environment_variables(self):
