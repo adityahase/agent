@@ -116,3 +116,7 @@ class Container(Base):
     @property
     def step_record(self):
         return self.server.step_record
+
+    @step_record.setter
+    def step_record(self, value):
+        self.server.step_record = value
