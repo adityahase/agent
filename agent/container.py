@@ -63,7 +63,7 @@ class Container(Base):
             arguments.append(f"--publish {port}")
         for variable in self.environment_variables:
             arguments.append(f"--env {variable}")
-        arguments.append(self.bench_config["docker_image"])
+        arguments.append(self.config["image"])
         return " ".join(arguments)
 
     @step("Create Overlay Network")
